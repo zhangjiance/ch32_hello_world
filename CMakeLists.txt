@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
 
 # ==============================================================================
-# ch32_hello_world - demo application for the ch32_dfu_boot bootloader.
+# ch32_hello_world - demo application for the DFU bootloader.
 #
-# Standalone project (mirrors hpm_hello_world): LED blink + DFU runtime +
-# CDC ACM, and a BOOT-button path that resets into the bootloader.
-# It links at 0x00008000, the application partition of ch32_dfu_boot.
+# Standalone project: LED blink + DFU runtime + CDC ACM, and a BOOT-button path
+# that resets into the bootloader.
+# It links at 0x00008000, the application partition of the bootloader.
 # ==============================================================================
 
 set(CMAKE_C_STANDARD 11)
@@ -30,7 +30,7 @@ set(SDK_ROOT       "${CMAKE_CURRENT_SOURCE_DIR}/SDK"
     CACHE PATH "WCH ch32v30x peripheral library root")
 
 # ------------------------------------------------------------------------------
-# Board / chip port selection (same names as ch32_dfu_boot)
+# Board / chip port selection
 # ------------------------------------------------------------------------------
 set(BOARD "ch32v30x_ob" CACHE STRING "Target board directory under boards/")
 set(BOARD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD}")

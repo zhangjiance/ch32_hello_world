@@ -1,8 +1,7 @@
 /*
  * main.c - ch32_hello_world
  *
- * Demo application running from 0x00008000 behind the ch32_dfu_boot
- * bootloader.  Mirrors hpm_hello_world:
+ * Demo application running from 0x00008000 behind the DFU bootloader:
  *
  *   - LED heartbeat
  *   - DFU runtime interface  -> `dfu-util -e` reboots into the bootloader

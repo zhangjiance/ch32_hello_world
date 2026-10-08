@@ -5,10 +5,8 @@
  *
  *  - interface 0 (DFU runtime) answers DFU_DETACH (dfu-util -e).  Instead of
  *    performing an in-place DFU we set the BKP hand-shake and reset, so the
- *    ch32_dfu_boot bootloader comes up in DFU mode.
+ *    bootloader comes up in DFU mode.
  *  - CDC ACM is a virtual serial port with a simple loopback.
- *
- * Ported from hpm_hello_world/src/usb_desc.c onto the CH32V30x USBHS port.
  */
 #include "usbd_core.h"
 #include "usbd_cdc_acm.h"
@@ -122,7 +120,7 @@ static const char *string_descriptor_cb(uint8_t speed, uint8_t index)
  * Without these, Windows has no idea which driver to bind to the DFU runtime
  * interface and `dfu-util -e` cannot open it (a manual Zadig step would be
  * needed).  With the Compatible ID below Windows automagically installs
- * WinUSB for interface 0, exactly like the ch32_dfu_boot bootloader does.
+ * WinUSB for interface 0, the same way the bootloader announces it.
  *
  * The CDC ACM interfaces (1-2) are deliberately NOT listed: Windows then
  * keeps its inbox usbser.sys for them, so the VCOM still enumerates as a
