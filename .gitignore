@@ -1,0 +1,13 @@
+# editor / index caches
+.cache/
+
+# build trees (build/, build_nokey/, ...)
+/build*/
+
+# build artifacts
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+compile_commands.json

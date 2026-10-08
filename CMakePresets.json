@@ -1,0 +1,58 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 22,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "description": "Base preset for the CH32V30x DFU application",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "base-debug",
+            "hidden": true,
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "ch32v30x_ob-release",
+            "displayName": "CH32V30x OB (Release)",
+            "inherits": "base",
+            "cacheVariables": {
+                "BOARD": "ch32v30x_ob"
+            },
+            "binaryDir": "${sourceDir}/build/ch32v30x_ob-release"
+        },
+        {
+            "name": "ch32v30x_ob-debug",
+            "displayName": "CH32V30x OB (Debug)",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "BOARD": "ch32v30x_ob"
+            },
+            "binaryDir": "${sourceDir}/build/ch32v30x_ob-debug"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "ch32v30x_ob-release",
+            "configurePreset": "ch32v30x_ob-release",
+            "jobs": 8
+        },
+        {
+            "name": "ch32v30x_ob-debug",
+            "configurePreset": "ch32v30x_ob-debug",
+            "jobs": 8
+        }
+    ]
+}
