@@ -46,13 +46,13 @@ if(NOT EXISTS "${BOARD_DIR}/board_config.h")
     message(FATAL_ERROR "Unknown BOARD '${BOARD}'. Available boards: ${_available_boards}")
 endif()
 
-# Board Support Package: a board may ship its own board.c; when it does not,
-# the shared generic implementation (boards/boot_board.c) is used.
-if(EXISTS "${BOARD_DIR}/board.c")
-    set(BOARD_SRC "${BOARD_DIR}/board.c")
-else()
-    set(BOARD_SRC "${CMAKE_CURRENT_SOURCE_DIR}/boards/boot_board.c")
+# Board Support Package.  A board directory is self-contained - board_config.h
+# (pins/features), board.h and board.c (primitives) - so copying one under
+# boards/ and selecting it with -DBOARD=<name> is all it takes to reuse it.
+if(NOT EXISTS "${BOARD_DIR}/board.c")
+    message(FATAL_ERROR "Board '${BOARD}' has no board.c (expected boards/${BOARD}/board.c)")
 endif()
+set(BOARD_SRC "${BOARD_DIR}/board.c")
 
 # Optional per-board compile definitions.
 if(EXISTS "${BOARD_DIR}/board.cmake")
@@ -146,7 +146,6 @@ target_include_directories(${PROJECT_TARGET} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/shared
     ${CMAKE_CURRENT_SOURCE_DIR}/port
-    ${CMAKE_CURRENT_SOURCE_DIR}/boards
     ${BOARD_DIR}
     ${CHIP_PORT_DIR}
 )

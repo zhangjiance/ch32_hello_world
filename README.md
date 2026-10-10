@@ -24,10 +24,10 @@ ch32_hello_world/
 │   └── CherryUSB/              # git submodule: our fork, branch ch32v30x-usbhs
 ├── shared/boot_protocol.h      # partition/hand-shake contract with the bootloader
 ├── boards/
-│   ├── boot_board.h/.c         # generic board implementation (used when a board
-│   │                           # has no board.c of its own)
-│   └── ch32v30x_ob/            # current board BSP
-│       └── board_config.h      # BOOT button PA6 + LED PA5
+│   └── ch32v30x_ob/            # current board BSP (self-contained, copy to reuse)
+│       ├── board_config.h      # BOARD_* macros: BOOT button PA6 + LED PA5
+│       ├── board.h             # board primitive interface
+│       └── board.c             # board primitives + the periodic tick ISR
 ├── port/
 │   ├── boot_trigger_port.h     # hand-shake interface across the reset
 │   ├── boot_usb_port.h

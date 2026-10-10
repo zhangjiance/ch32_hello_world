@@ -12,8 +12,8 @@
 #include "debug.h"
 
 #include "board_config.h"
+#include "board.h"
 #include "boot_log.h"
-#include "boot_board.h"
 #include "boot_protocol.h"
 #include "boot_trigger_port.h"
 
@@ -26,7 +26,12 @@ extern void app_usb_init(uint8_t busid, uintptr_t reg_base);
 
 int main(void)
 {
-    boot_board_init();
+    board_init();
+    /* The log UART is an application concern - the board layer owns pins, not
+     * a console - so it is brought up here, and only in the logging build. */
+#if BOOT_LOG_ENABLED
+    USART_Printf_Init(BOOT_LOG_BAUDRATE);
+#endif
 
     BOOT_PRINTF("\r\n");
     BOOT_PRINTF("========================================\r\n");
@@ -43,12 +48,12 @@ int main(void)
 
     while (1) {
         /* LED heartbeat */
-        boot_board_led_toggle();
+        board_led_toggle();
         ++tick;
 
         /* BOOT button held -> request DFU mode and reset into the bootloader.
-         * (Only meaningful on boards that have a button.) */
-        if (boot_board_has_boot_button() && boot_board_read_bootpin()) {
+         * (board_read_boot_pin() is always false on boards without a button.) */
+        if (board_read_boot_pin()) {
             if (++press >= APP_BOOT_PRESS_COUNT) {
                 BOOT_PRINTF("[APP] BOOT button held, entering bootloader\r\n");
                 boot_trigger_reboot_to_boot();
@@ -57,6 +62,6 @@ int main(void)
             press = 0;
         }
 
-        Delay_Ms(APP_TICK_MS);
+        board_delay_ms(APP_TICK_MS);
     }
 }

@@ -24,9 +24,10 @@ ch32_hello_world/
 │   └── CherryUSB/              # git 子仓：自己的 fork，分支 ch32v30x-usbhs
 ├── shared/boot_protocol.h      # 与 bootloader 的分区/握手契约
 ├── boards/
-│   ├── boot_board.h/.c         # 板级通用实现（board 未自带 board.c 时使用）
-│   └── ch32v30x_ob/            # 当前板 BSP
-│       └── board_config.h      # BOOT 按键 PA6 + LED PA5
+│   └── ch32v30x_ob/            # 当前板 BSP（自包含，拷贝即复用）
+│       ├── board_config.h      # BOARD_* 宏：BOOT 按键 PA6 + LED PA5
+│       ├── board.h             # 板级原语接口
+│       └── board.c             # 板级原语 + 周期 tick 中断
 ├── port/
 │   ├── boot_trigger_port.h     # 跨复位握手接口
 │   ├── boot_usb_port.h
