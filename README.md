@@ -45,7 +45,7 @@ ch32_hello_world/
     ├── fault_handlers.c        # hard fault -> reset (ch32fun defaults to spin)
     ├── funconfig.h             # ch32fun configuration (printf, size knobs)
     ├── boot_log.h
-    └── Link.ld                 # 0x00008000 + 96K
+    └── Link.ld                 # 0x00003000 + 116K
 ```
 
 `boards/`, `port/`, `shared/` and `cmake/` follow the same structure as the
@@ -72,7 +72,7 @@ cmake --build --preset ch32v30x_ob-debug      # build
 | `ch32v30x_ob-release` | Release (logging off, smaller) | `build/ch32v30x_ob-release/` |
 
 Artifacts: `<output dir>/ch32_hello_world.elf | .hex | .bin`
-(Debug ≈ 11.0 KB, Release ≈ 8.7 KB, out of the 96 KB partition).
+(Debug ≈ 11.0 KB, Release ≈ 8.7 KB, out of the 116 KB application partition).
 
 ### What is in the image
 
@@ -102,11 +102,11 @@ cmake --build build -j
 
 ## Usage
 
-1. Flash the DFU bootloader to `0x00000000` first (it owns the first 32 KB).
+1. Flash the DFU bootloader to `0x00000000` first (it owns the first 12 KB).
 2. Update/flash this application:
    ```bash
    dfu-util -e                                                # enter the bootloader (DFU runtime)
-   dfu-util -a 0 -s 0x08008000:leave -D build/ch32v30x_ob-debug/ch32_hello_world.bin
+   dfu-util -a 0 -s 0x08003000:leave -D build/ch32v30x_ob-debug/ch32_hello_world.bin
    ```
    Boards with a button can also enter the bootloader by holding BOOT.
 3. After the reset the application runs: the PA5 LED blinks, USB enumerates as a

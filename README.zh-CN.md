@@ -44,7 +44,7 @@ ch32_hello_world/
     ├── fault_handlers.c        # 硬件异常 -> 复位（ch32fun 默认是死循环）
     ├── funconfig.h             # ch32fun 配置（printf、体积开关）
     ├── boot_log.h
-    └── Link.ld                 # 0x00008000 + 96K
+    └── Link.ld                 # 0x00003000 + 116K
 ```
 
 `boards/`、`port/`、`shared/`、`cmake/` 与引导程序工程保持同构，
@@ -70,7 +70,7 @@ cmake --build --preset ch32v30x_ob-debug      # 编译
 | `ch32v30x_ob-release` | Release（日志关闭，体积更小） | `build/ch32v30x_ob-release/` |
 
 产物：`<输出目录>/ch32_hello_world.elf | .hex | .bin`
-（Debug ≈ 11.0 KB，Release ≈ 8.7 KB，分区 96 KB）。
+（Debug ≈ 11.0 KB，Release ≈ 8.7 KB，应用分区 116 KB）。
 
 ### 镜像里有什么
 
@@ -96,11 +96,11 @@ cmake --build build -j
 
 ## 使用
 
-1. 先烧配套的 DFU 引导程序到 `0x00000000`（它占前 32 KB）。
+1. 先烧配套的 DFU 引导程序到 `0x00000000`（它占前 12 KB）。
 2. 升级/烧录本 APP：
    ```bash
    dfu-util -e                                                # 进 bootloader（DFU runtime）
-   dfu-util -a 0 -s 0x08008000:leave -D build/ch32v30x_ob-debug/ch32_hello_world.bin
+   dfu-util -a 0 -s 0x08003000:leave -D build/ch32v30x_ob-debug/ch32_hello_world.bin
    ```
    带按键的 board 也可以**长按 BOOT 键**进入 bootloader。
 3. 复位后运行 APP：PA5 LED 心跳闪烁，USB 枚举为

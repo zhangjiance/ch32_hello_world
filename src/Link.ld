@@ -12,10 +12,11 @@ MEMORY
    FLASH + RAM options (see CH32FV2x_V3xRM Table 32-3):
      192K/128K, 224K/96K, 256K/64K, 288K/32K, 128K/192K
 
-   Application partition: starts at 0x00008000 (the DFU bootloader
-   owns the first 32 KB) and spans the remaining flash.  Must match
-   BOOT_APP_OFFSET in shared/boot_protocol.h (128 KB flash => 96 KB). */
-	FLASH (rx) : ORIGIN = 0x00008000, LENGTH = 96K
+   Application partition: starts at 0x00003000 (the DFU bootloader owns the
+   first 12 KB) and spans the remaining flash, rounded down to whole DfuSe
+   sectors.  Must match BOOT_APP_OFFSET / BOOT_APP_SIZE in
+   shared/boot_protocol.h (128 KB flash => 116 KB). */
+	FLASH (rx) : ORIGIN = 0x00003000, LENGTH = 116K
 	RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 32K
 }
 
