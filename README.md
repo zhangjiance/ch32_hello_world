@@ -115,6 +115,13 @@ cmake --build build -j
 
 ## Notes
 
+- **Clock hand-over from the bootloader**: the bootloader leaves `SYSCLK` on
+  the PLL, but ch32fun's `SystemInit()` rebuilds the tree by *assigning*
+  `RCC->CTLR`, and its first write clears `PLLON` - which stops the clock the
+  core is running on, so the image dies on the first instruction of `main()`
+  (no LED, no USB).  `src/main.c` therefore calls `clock_fallback_to_hsi()`
+  before `SystemInit()`, the same order the WCH startup used.  Any new
+  application image behind this bootloader needs the same hand-over.
 - Button detection is **continuous**: it requires `APP_BOOT_PRESS_COUNT` consecutive
   samples (1000 ms by default) to be pressed, so contact bounce cannot trigger a jump
   into the bootloader (`src/main.c`).

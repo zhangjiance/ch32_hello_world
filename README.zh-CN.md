@@ -109,6 +109,12 @@ cmake --build build -j
 
 ## 说明
 
+- **从 bootloader 交接时钟**：bootloader 退出时 `SYSCLK` 已经挂在 PLL 上，而
+  ch32fun 的 `SystemInit()` 是**赋值**方式重建时钟树，第一条写 `RCC->CTLR` 就会清掉
+  `PLLON`——正好停掉内核正在用的时钟，程序在 `main()` 第一条指令就死了（LED 不闪、
+  USB 不枚举）。因此 `src/main.c` 在 `SystemInit()` 之前先调用
+  `clock_fallback_to_hsi()`，与 WCH 启动文件的顺序一致。接在这个 bootloader 后面的
+  其他应用镜像同样需要这一步交接。
 - 按键判定为**持续性**：连续 `APP_BOOT_PRESS_COUNT` 次采样（默认 1000 ms）
   都按下才跳转，避免抖动误触发（`src/main.c`）。
 - `ch32v30x_ob` 带 PA6 按键；后续若新增无按键板，把该板 `board_config.h` 的
