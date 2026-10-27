@@ -9,11 +9,7 @@
  *   - BOOT button held       -> reboot into the bootloader (boards that have
  *     one; on boards without a button only the detach path remains)
  */
-#if defined(BOOT_USE_CH32FUN)
 #include "ch32fun.h"
-#else
-#include "debug.h"
-#endif
 
 #include "board_config.h"
 #include "board.h"
@@ -30,20 +26,11 @@ extern void app_usb_init(uint8_t busid, uintptr_t reg_base);
 
 int main(void)
 {
-#if defined(BOOT_USE_CH32FUN)
     /* ch32fun's handle_reset() jumps straight to main(); SystemInit() is what
      * brings the clock tree (HSE x6 = 144 MHz) and the printf UART up. */
     SystemInit();
-#endif
 
     board_init();
-    /* The log UART is an application concern - the board layer owns pins, not
-     * a console - so it is brought up here, and only in the logging build.
-     * The ch32fun backend has no such call: SystemInit() above already set the
-     * transport described in src/funconfig.h. */
-#if BOOT_LOG_ENABLED && !defined(BOOT_USE_CH32FUN)
-    USART_Printf_Init(BOOT_LOG_BAUDRATE);
-#endif
 
     BOOT_PRINTF("\r\n");
     BOOT_PRINTF("========================================\r\n");

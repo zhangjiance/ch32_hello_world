@@ -13,6 +13,10 @@
  * folder is self-contained, copying it under boards/ of another project and
  * selecting it with -DBOARD=<board> just works.
  *
+ * Pins are spelled the way ch32fun addresses them, port * 16 + number
+ * (ch32v30xhw.h: PA5, PB10, ...); board.c turns that into the CFGLR/BSHR
+ * writes.
+ *
  *   BOOT button : PA6 to GND, internal pull-up, active low
  *   status LED  : PA5, active low
  *   app UART    : USART3, PB10 (TX) / PB11 (RX)
@@ -26,47 +30,23 @@
  * Set BOARD_HAS_BOOT_BUTTON to 0 on a board without a button: DFU is then
  * entered only through the application detach path (dfu-util -e). */
 #define BOARD_HAS_BOOT_BUTTON   1
-#define BOARD_BOOT_GPIO         GPIOA
-#define BOARD_BOOT_PIN          GPIO_Pin_6
-#define BOARD_BOOT_RCC          RCC_APB2Periph_GPIOA
+#define BOARD_BOOT_PIN          PA6
 #define BOARD_BOOT_ACTIVE_LOW   1
 
 /* ---- status LED: PA5 (plain GPIO, no JTAG remap needed) ----
  * BOARD_LED_ACTIVE_LOW: 1 = LED on when the pin is low. */
 #define BOARD_HAS_LED           1
-#define BOARD_LED_GPIO          GPIOA
-#define BOARD_LED_PIN           GPIO_Pin_5
-#define BOARD_LED_RCC           RCC_APB2Periph_GPIOA
+#define BOARD_LED_PIN           PA5
 #define BOARD_LED_ACTIVE_LOW    1
-#define BOARD_LED_NEEDS_JTAG_DISABLE 0
 
 /* ---- application UART ----
  * USART3 on PB10 (TX) / PB11 (RX): the board's UART for application traffic.
- * The BMP build drives it as its USB2UART hardware; the bootloader and the
- * hello-world build leave it unused - they never call board_init_app_uart(),
- * and their own log output is their business (see main.c).
- * The clock helpers are macros because the APB bus differs per USART, which is
- * exactly the kind of board detail board.c must not hardcode. */
+ * The BMP build drives it as its USB2UART hardware; the hello-world build
+ * leaves it unused - it never calls board_init_app_uart(), and its own log
+ * output is its business (see main.c). */
 #define BOARD_HAS_APP_UART        1
-#define BOARD_APP_UART            USART3
-#define BOARD_APP_UART_IRQ        USART3_IRQn
 #define BOARD_APP_UART_BAUDRATE   115200
-#define BOARD_APP_UART_TX_GPIO    GPIOB
-#define BOARD_APP_UART_TX_PIN     GPIO_Pin_10
-#define BOARD_APP_UART_RX_GPIO    GPIOB
-#define BOARD_APP_UART_RX_PIN     GPIO_Pin_11
-#define BOARD_APP_UART_CLK_ENABLE()      RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE)
-#define BOARD_APP_UART_GPIO_CLK_ENABLE() RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE)
-
-/* ---- ch32fun backend ----
- * board_ch32fun.c implements the very same primitives with ch32fun, which names
- * a pin as port*16 + number (ch32v30xhw.h: PA5, PB10, ...) and enables a
- * peripheral through RCC->APB2PCENR instead of the GPIO_Init()/RCC_xxxClockCmd()
- * helpers.  Spelling the same wiring out in that form keeps this file free of
- * any one SDK's headers, so both backends read the pinout from one place. */
-#define BOARD_FUN_BOOT_PIN      PA6
-#define BOARD_FUN_LED_PIN       PA5
-#define BOARD_FUN_UART_TX_PIN   PB10
-#define BOARD_FUN_UART_RX_PIN   PB11
+#define BOARD_APP_UART_TX_PIN     PB10
+#define BOARD_APP_UART_RX_PIN     PB11
 
 #endif /* BOARD_CONFIG_H */

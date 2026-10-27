@@ -1,11 +1,9 @@
 # ==============================================================================
-# ch32fun backend toolchain/flags (selected with -DSDK_BACKEND=ch32fun)
+# Toolchain and flags for the CH32V30x DFU bootloader (ch32fun based)
 #
-# Same compiler, same optimisations and the same linker script as the WCH SDK
-# backend, so a size comparison between the two isolates the SDK itself.  The
-# only differences are the ones ch32fun asks for:
-#   - entry point is InterruptVector (ch32fun's vector table lives in .init)
-#   - no WCH startup .S / system_ch32v30x.c: handle_reset() is in ch32fun.c
+# There is no vendor startup file and no vendor library: ch32fun.c brings
+# handle_reset() and the vector table (in .init, at address 0), which is why the
+# entry point is InterruptVector rather than a _start stub.
 # ==============================================================================
 set(CMAKE_SYSTEM_NAME               Generic)
 
@@ -41,8 +39,8 @@ add_compile_options(
 )
 
 # -march=rv32imacxw: the "xw" extension is what makes the WCH fast interrupt
-# entry (INTERRUPT_DECORATOR with FUNCONF_ENABLE_HPE) and the hardware
-# prologue painless - the same ISA the WCH SDK build uses.
+# entry (INTERRUPT_DECORATOR with FUNCONF_ENABLE_HPE) and the hardware prologue
+# painless, and every handler here uses that form.
 add_compile_options(-march=rv32imacxw -mabi=ilp32)
 
 add_link_options(
@@ -54,8 +52,5 @@ add_link_options(
         -lm
         -fno-ident
         -Wl,--print-memory-usage
-        # ch32fun has no _start: the vector table at address 0 is the entry,
-        # and user/Link.ld keeps ENTRY(_start) for the WCH SDK backend.
-        -Wl,-e,InterruptVector
         --specs=nano.specs --specs=nosys.specs
 )

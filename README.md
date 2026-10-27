@@ -18,10 +18,10 @@ It links at `0x00008000`, the application partition of the bootloader.
 ```
 ch32_hello_world/
 ├── CMakeLists.txt
-├── cmake/wch_riscv.cmake
-├── SDK/                        # WCH peripheral library + startup files
+├── cmake/riscv.cmake           # riscv-wch-elf- toolchain + flags
 ├── third_party_components/
-│   └── CherryUSB/              # git submodule: our fork, branch ch32v30x-usbhs
+│   ├── CherryUSB/              # git submodule: our fork, branch ch32v30x-usbhs
+│   └── ch32fun/                # git submodule: cnlohr/ch32fun, pinned
 ├── shared/boot_protocol.h      # partition/hand-shake contract with the bootloader
 ├── boards/
 │   └── ch32v30x_ob/            # current board BSP (self-contained, copy to reuse)
@@ -33,7 +33,7 @@ ch32_hello_world/
 │   ├── boot_usb_port.h
 │   └── ch32v30x/
 │       ├── boot_trigger_ch32v30x.c    # BKP trigger
-│       └── boot_usb_ch32v30x.c        # USBHS RCC + usb_dc_low_level_*
+│       └── boot_usb_ch32v30x.c        # USBHS clock + usb_dc_low_level_*
 │                                      # (the USBHS device driver lives in the
 │                                      #  submodule, under
 │                                      #  third_party_components/CherryUSB/port/wch/ch32v30x/)
@@ -41,14 +41,13 @@ ch32_hello_world/
     ├── main.c                  # LED + button-to-boot + USB
     ├── usb_desc.c              # DFU runtime + CDC ACM
     ├── usb_config.h
-    ├── ch32v30x_it.c
-    ├── system_ch32v30x.c/.h
-    ├── ch32v30x_conf.h / ch32v30x_it.h
+    ├── fault_handlers.c        # hard fault -> reset (ch32fun defaults to spin)
+    ├── funconfig.h             # ch32fun configuration (clock tree, printf)
     ├── boot_log.h
     └── Link.ld                 # 0x00008000 + 96K
 ```
 
-`boards/`, `port/`, `shared/`, `cmake/` and `SDK/` follow the same structure as the
+`boards/`, `port/`, `shared/` and `cmake/` follow the same structure as the
 bootloader project, so both share one board/chip abstraction and one hand-shake
 protocol.
 
@@ -70,41 +69,28 @@ cmake --build --preset ch32v30x_ob-debug      # build
 | --- | --- | --- |
 | `ch32v30x_ob-debug` | Debug (`BOOT_PRINTF` enabled) | `build/ch32v30x_ob-debug/` |
 | `ch32v30x_ob-release` | Release (logging off, smaller) | `build/ch32v30x_ob-release/` |
-| `ch32v30x_ob-debug-ch32fun` | same, ch32fun backend | `build/ch32v30x_ob-debug-ch32fun/` |
-| `ch32v30x_ob-release-ch32fun` | same, ch32fun backend | `build/ch32v30x_ob-release-ch32fun/` |
 
 Artifacts: `<output dir>/ch32_hello_world.elf | .hex | .bin`
+(Debug ≈ 11.0 KB, Release ≈ 8.7 KB, out of the 96 KB partition).
 
-| preset | Release | Debug |
-| --- | --- | --- |
-| `*` (WCH SDK) | 12152 B | 18700 B |
-| `*-ch32fun` | **8948 B** | 11240 B |
+### What is in the image
 
-out of the 96 KB partition.
+[ch32fun](https://github.com/cnlohr/ch32fun) supplies the startup, the vector
+table, the clock tree and `printf`; everything else is register access in
+`board.c` and the chip port.  There is no vendor HAL in the build.  ch32fun is a
+submodule pinned to a known-good commit, so
+`git submodule update --init --recursive` fetches it; point `-DCH32FUN_ROOT=<path>`
+at another checkout to override.
 
-### Peripheral library backend
-
-`-DSDK_BACKEND=wch|ch32fun` picks what sits under the board and chip port
-layers.
-
-* `wch` (default) - the WCH ch32v30x peripheral library from `SDK/` plus its
-  startup file.
-* `ch32fun` - [ch32fun](https://github.com/cnlohr/ch32fun), register level:
-  `ch32fun.c` supplies the startup, the clock tree and the `printf` transport,
-  `board_ch32fun.c` and `port/ch32v30x/boot_*_ch32v30xfun.c` supply everything
-  else.  It is a git submodule pinned to a known-good commit, so
-  `git submodule update --init --recursive` fetches it; point
-  `-DCH32FUN_ROOT=<path>` at another checkout to override.
-
-The gap comes from the C library: the WCH build links newlib's `printf` and
-`__udivdi3` (the 64-bit divide in the time base), the ch32fun build brings its
-own small formatter and a 32-bit time base.
+The WCH build was 12152 B (Release): the difference is the C library - newlib's
+`printf` plus `__udivdi3` (the 64-bit divide in the time base), which the
+ch32fun build replaces with its own small formatter and a 32-bit time base.
 
 For a new board, add a pair of presets (`<board>-debug` / `<board>-release`) the same
 way, or configure directly:
 
 ```bash
-cmake -S . -B build -DBOARD=<board_name> [-DSDK_BACKEND=ch32fun]
+cmake -S . -B build -DBOARD=<board_name>
 cmake --build build -j
 ```
 

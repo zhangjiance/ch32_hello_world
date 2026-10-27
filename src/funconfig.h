@@ -3,14 +3,13 @@
  *
  * ch32fun configuration for ch32_hello_world.
  *
- * Only used when the build selects the ch32fun backend (-DSDK_BACKEND=ch32fun).
- * It reproduces the clock tree and the print backend of the WCH SDK build, so
- * both firmware variants behave identically:
+ * The clock tree is the board's crystal times the PLL; it is kept here (rather
+ * than in the board folder) because ch32fun reads it from this file:
  *
  *     HSE 24 MHz  ->  PLL x6  ->  SYSCLK = HCLK = 144 MHz, APB1 = HCLK/2 = 72 MHz
  *
- * Nothing board specific lives here; pins and polarity stay in
- * boards/<board>/board_config.h.
+ * A board with a different crystal has to change the three clock values below.
+ * Pins and polarity stay in boards/<board>/board_config.h.
  */
 #ifndef _FUNCONFIG_H
 #define _FUNCONFIG_H
@@ -43,8 +42,8 @@
 #define FUNCONF_SYSTICK_USE_HCLK 1
 
 /* ------------------------------------------------------------------ *
- * BOOT_PRINTF transport: USART1 (PA9), 115200 8N1 - same wire and rate as
- * the WCH SDK build's USART_Printf_Init().
+ * BOOT_PRINTF transport: USART1 (PA9), 115200 8N1.  Debug builds only; the
+ * Release build compiles the logging (and the formatter behind it) out.
  * ------------------------------------------------------------------ */
 #define FUNCONF_USE_DEBUGPRINTF 0
 #define FUNCONF_USE_UARTPRINTF 1

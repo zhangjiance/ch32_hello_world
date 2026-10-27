@@ -18,10 +18,10 @@ DFU 引导程序配套的**演示 APP**。
 ```
 ch32_hello_world/
 ├── CMakeLists.txt
-├── cmake/wch_riscv.cmake
-├── SDK/                        # WCH 外设库 + 启动文件
+├── cmake/riscv.cmake           # riscv-wch-elf- 工具链与编译选项
 ├── third_party_components/
-│   └── CherryUSB/              # git 子仓：自己的 fork，分支 ch32v30x-usbhs
+│   ├── CherryUSB/              # git 子仓：自己的 fork，分支 ch32v30x-usbhs
+│   └── ch32fun/                # git 子仓：cnlohr/ch32fun，已固定提交
 ├── shared/boot_protocol.h      # 与 bootloader 的分区/握手契约
 ├── boards/
 │   └── ch32v30x_ob/            # 当前板 BSP（自包含，拷贝即复用）
@@ -33,21 +33,20 @@ ch32_hello_world/
 │   ├── boot_usb_port.h
 │   └── ch32v30x/
 │       ├── boot_trigger_ch32v30x.c    # BKP 触发
-│       └── boot_usb_ch32v30x.c        # USBHS RCC + usb_dc_low_level_*
+│       └── boot_usb_ch32v30x.c        # USBHS 时钟 + usb_dc_low_level_*
 │                                      # （USBHS 设备驱动在子仓
 │                                      #   third_party_components/CherryUSB/port/wch/ch32v30x/）
 └── src/
     ├── main.c                  # 点灯 + 按键进 boot + USB
     ├── usb_desc.c              # DFU runtime + CDC ACM
     ├── usb_config.h
-    ├── ch32v30x_it.c
-    ├── system_ch32v30x.c/.h
-    ├── ch32v30x_conf.h / ch32v30x_it.h
+    ├── fault_handlers.c        # 硬件异常 -> 复位（ch32fun 默认是死循环）
+    ├── funconfig.h             # ch32fun 配置（时钟树、printf）
     ├── boot_log.h
     └── Link.ld                 # 0x00008000 + 96K
 ```
 
-`boards/`、`port/`、`shared/`、`cmake/`、`SDK/` 与引导程序工程保持同构，
+`boards/`、`port/`、`shared/`、`cmake/` 与引导程序工程保持同构，
 两边共用同一套 board/chip 抽象与握手协议。
 
 ---
@@ -68,37 +67,25 @@ cmake --build --preset ch32v30x_ob-debug      # 编译
 | --- | --- | --- |
 | `ch32v30x_ob-debug` | Debug（`BOOT_PRINTF` 打开） | `build/ch32v30x_ob-debug/` |
 | `ch32v30x_ob-release` | Release（日志关闭，体积更小） | `build/ch32v30x_ob-release/` |
-| `ch32v30x_ob-debug-ch32fun` | 同上，改用 ch32fun 后端 | `build/ch32v30x_ob-debug-ch32fun/` |
-| `ch32v30x_ob-release-ch32fun` | 同上，改用 ch32fun 后端 | `build/ch32v30x_ob-release-ch32fun/` |
 
 产物：`<输出目录>/ch32_hello_world.elf | .hex | .bin`
+（Debug ≈ 11.0 KB，Release ≈ 8.7 KB，分区 96 KB）。
 
-| preset | Release | Debug |
-| --- | --- | --- |
-| `*`（WCH SDK） | 12152 B | 18700 B |
-| `*-ch32fun` | **8948 B** | 11240 B |
+### 镜像里有什么
 
-分区 96 KB。
+[ch32fun](https://github.com/cnlohr/ch32fun) 提供启动、向量表、时钟树和 `printf`，
+其余全部是 `board.c` 与芯片 port 里的寄存器操作——构建里没有任何厂商 HAL。
+ch32fun 是 git 子仓并固定在验证过的提交，`git submodule update --init --recursive`
+会自动拉取；也可用 `-DCH32FUN_ROOT=<path>` 指定别的副本。
 
-### 外设库后端
-
-`-DSDK_BACKEND=wch|ch32fun` 决定 board 层和芯片 port 层下面用哪套库。
-
-* `wch`（默认）——`SDK/` 里的 WCH ch32v30x 外设库 + 官方启动文件。
-* `ch32fun`——[ch32fun](https://github.com/cnlohr/ch32fun)，寄存器级：
-  `ch32fun.c` 提供启动、时钟树和 `printf` 输出，其余由 `board_ch32fun.c` 与
-  `port/ch32v30x/boot_*_ch32v30xfun.c` 提供。它是 git 子仓，固定在验证过的提交，
-  `git submodule update --init --recursive` 会自动拉取；也可用
-  `-DCH32FUN_ROOT=<path>` 指定别的副本。
-
-差距来自 C 库：WCH 版链着 newlib 的 `printf` 和 `__udivdi3`（时基里的 64 位除法），
-ch32fun 版自带小格式化器且时基改成 32 位。
+WCH 版 Release 是 12152 B，差距来自 C 库：newlib 的 `printf` 加上 `__udivdi3`
+（时基里的 64 位除法），ch32fun 版用自带的小格式化器，时基也改成 32 位。
 
 新增 board 后照葫芦画瓢加一对 preset（`<board>-debug` / `<board>-release`），
 也可以不用 preset 直接：
 
 ```bash
-cmake -S . -B build -DBOARD=<board_name> [-DSDK_BACKEND=ch32fun]
+cmake -S . -B build -DBOARD=<board_name>
 cmake --build build -j
 ```
 

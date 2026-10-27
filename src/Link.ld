@@ -1,4 +1,4 @@
-ENTRY( _start )
+ENTRY( InterruptVector )
 
 __stack_size = 2048;
 
@@ -31,12 +31,6 @@ SECTIONS
 		. = ALIGN(4);
 		_einit = .;
 	} >FLASH AT>FLASH
-
-  .vector :
-  {
-      *(.vector);
-	  . = ALIGN(64);
-  } >FLASH AT>FLASH
 
 	.text :
 	{
