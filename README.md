@@ -27,7 +27,8 @@ ch32_hello_world/
 │   └── ch32v30x_ob/            # current board BSP (self-contained, copy to reuse)
 │       ├── board_config.h      # BOARD_* macros: BOOT button PA6 + LED PA5
 │       ├── board.h             # board primitive interface
-│       └── board.c             # board primitives + the periodic tick ISR
+│       ├── board.c             # board primitives + the periodic tick ISR
+│       └── board.cmake         # crystal + clock tree
 ├── port/
 │   ├── boot_trigger_port.h     # hand-shake interface across the reset
 │   ├── boot_usb_port.h
@@ -42,7 +43,7 @@ ch32_hello_world/
     ├── usb_desc.c              # DFU runtime + CDC ACM
     ├── usb_config.h
     ├── fault_handlers.c        # hard fault -> reset (ch32fun defaults to spin)
-    ├── funconfig.h             # ch32fun configuration (clock tree, printf)
+    ├── funconfig.h             # ch32fun configuration (printf, size knobs)
     ├── boot_log.h
     └── Link.ld                 # 0x00008000 + 96K
 ```

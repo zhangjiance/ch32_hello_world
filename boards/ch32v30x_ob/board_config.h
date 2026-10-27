@@ -7,11 +7,11 @@
  *     boards/<board>/board_config.h   pins / polarity / features (this file)
  *     boards/<board>/board.h          board primitive interface (copy as is)
  *     boards/<board>/board.c          board primitive implementation (copy as is)
- *     boards/<board>/board.cmake      OPTIONAL extra CMake definitions
+ *     boards/<board>/board.cmake      crystal + clock tree, optional extras
  *
- * It is the default board of every project that uses it.  Because the whole
- * folder is self-contained, copying it under boards/ of another project and
- * selecting it with -DBOARD=<board> just works.
+ * Adding a board should be nothing more than copying this folder, editing this
+ * file and the crystal in board.cmake, and selecting it with -DBOARD=<board>:
+ * no file outside boards/ has to change.
  *
  * Pins are spelled the way ch32fun addresses them, port * 16 + number
  * (ch32v30xhw.h: PA5, PB10, ...); board.c turns that into the CFGLR/BSHR
@@ -40,13 +40,27 @@
 #define BOARD_LED_ACTIVE_LOW    1
 
 /* ---- application UART ----
- * USART3 on PB10 (TX) / PB11 (RX): the board's UART for application traffic.
- * The BMP build drives it as its USB2UART hardware; the hello-world build
- * leaves it unused - it never calls board_init_app_uart(), and its own log
- * output is its business (see main.c). */
+ * The board's UART for application traffic; board_init_app_uart() sets up the
+ * instance and the two pins.  The images shipped in this project never call
+ * it, so it only has to be right for boards that do. */
 #define BOARD_HAS_APP_UART        1
+#define BOARD_APP_UART            USART3
+#define BOARD_APP_UART_RCC        RCC_APB1Periph_USART3
 #define BOARD_APP_UART_BAUDRATE   115200
 #define BOARD_APP_UART_TX_PIN     PB10
 #define BOARD_APP_UART_RX_PIN     PB11
+
+/* ---- GPIO port clocks this board needs ----
+ * RCC->APB2PCENR bits, one per port named above. */
+#define BOARD_GPIO_RCC  (RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB)
+
+/* ---- periodic tick ----
+ * BOARD_TICK_TIM_ISR has to be the handler name ch32fun's vector table uses
+ * for that timer, otherwise the tick interrupt never arrives (TIM3_IRQHandler,
+ * TIM2_IRQHandler, ... are all in it). */
+#define BOARD_TICK_TIM        TIM3
+#define BOARD_TICK_TIM_RCC    RCC_APB1Periph_TIM3
+#define BOARD_TICK_TIM_IRQ    TIM3_IRQn
+#define BOARD_TICK_TIM_ISR    TIM3_IRQHandler
 
 #endif /* BOARD_CONFIG_H */

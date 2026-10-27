@@ -3,12 +3,12 @@
  *
  * ch32fun configuration for ch32_hello_world.
  *
- * The clock tree is the board's crystal times the PLL; it is kept here (rather
- * than in the board folder) because ch32fun reads it from this file:
+ * The clock tree belongs to the board: boards/<board>/board.cmake sets the
+ * crystal and the resulting frequencies.  The values below are only fallbacks,
+ * so a build without a board.cmake still comes up on the same tree:
  *
  *     HSE 24 MHz  ->  PLL x6  ->  SYSCLK = HCLK = 144 MHz, APB1 = HCLK/2 = 72 MHz
  *
- * A board with a different crystal has to change the three clock values below.
  * Pins and polarity stay in boards/<board>/board_config.h.
  */
 #ifndef _FUNCONFIG_H
@@ -18,13 +18,26 @@
 
 /* ------------------------------------------------------------------ *
  * Clock tree
+ *
+ * Every one of these is a board property, so board.cmake wins with -D and the
+ * #ifndef below is only the fallback.  Keeping the fallbacks in the same order
+ * as the board file makes it obvious when the two drift apart.
  * ------------------------------------------------------------------ */
+#ifndef FUNCONF_USE_HSI
 #define FUNCONF_USE_HSI 0
+#endif
+#ifndef FUNCONF_USE_HSE
 #define FUNCONF_USE_HSE 1
+#endif
+#ifndef FUNCONF_USE_PLL
 #define FUNCONF_USE_PLL 1
+#endif
+#ifndef FUNCONF_PLL_MULTIPLIER
 #define FUNCONF_PLL_MULTIPLIER 6
+#endif
+#ifndef FUNCONF_SYSTEM_CORE_CLOCK
 #define FUNCONF_SYSTEM_CORE_CLOCK 144000000
-
+#endif
 #ifndef HSE_VALUE
 #define HSE_VALUE 24000000
 #endif
@@ -47,7 +60,9 @@
  * ------------------------------------------------------------------ */
 #define FUNCONF_USE_DEBUGPRINTF 0
 #define FUNCONF_USE_UARTPRINTF 1
+#ifndef FUNCONF_UART_PRINTF_BAUD
 #define FUNCONF_UART_PRINTF_BAUD 115200
+#endif
 
 /* ------------------------------------------------------------------ *
  * Size knobs: a fault handler that prints costs more than it saves here.

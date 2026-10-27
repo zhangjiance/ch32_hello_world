@@ -57,7 +57,7 @@ void board_delay_ms(uint32_t ms)
 #if BOARD_HAS_LED
 static void board_init_led(void)
 {
-    RCC->APB2PCENR |= RCC_APB2Periph_GPIOA;
+    RCC->APB2PCENR |= BOARD_GPIO_RCC;
 
     /* Preload the off level (BOARD_LED_ACTIVE_LOW aware) in the output latch
      * before the pin becomes an output, so the LED does not flash on. */
@@ -95,7 +95,7 @@ void board_led_toggle(void)
 #if BOARD_HAS_BOOT_BUTTON
 static void board_init_boot_button(void)
 {
-    RCC->APB2PCENR |= RCC_APB2Periph_GPIOA;
+    RCC->APB2PCENR |= BOARD_GPIO_RCC;
 
     /* On the CH32V30x the pull direction of a GPIO_CFGLR_IN_PUPD pin is the
      * output latch: 1 = pull-up.  The released level must be the "run the
@@ -126,8 +126,8 @@ bool board_read_boot_pin(void)
 void board_init_app_uart(void)
 {
 #if BOARD_HAS_APP_UART
-    RCC->APB2PCENR |= RCC_APB2Periph_GPIOB;
-    RCC->APB1PCENR |= RCC_APB1Periph_USART3;
+    RCC->APB2PCENR |= BOARD_GPIO_RCC;
+    RCC->APB1PCENR |= BOARD_APP_UART_RCC;
 
     /* TX idle high before the alternate function takes over, so the line does
      * not glitch low (the far end would read that as a start bit). */
@@ -148,28 +148,28 @@ void board_timer_create(uint32_t ms, board_tick_cb cb)
     tick_cb = cb;
 
     /*
-     * TIM3 update interrupt.  The prescaler gives a 10 kHz tick so the period
-     * only depends on the milliseconds asked for, independent of the clock.
-     * APB1 timer clock is HCLK.
+     * Periodic update interrupt on the board's tick timer.  The prescaler gives
+     * a 10 kHz tick so the period only depends on the milliseconds asked for,
+     * independent of the clock.  APB1 timer clock is HCLK.
      */
-    RCC->APB1PCENR |= RCC_APB1Periph_TIM3;
+    RCC->APB1PCENR |= BOARD_TICK_TIM_RCC;
 
-    TIM3->PSC    = (uint16_t)((FUNCONF_SYSTEM_CORE_CLOCK / 10000U) - 1U);
-    TIM3->ATRLR  = (uint16_t)((10000U * ms / 1000U) - 1U);
-    TIM3->CNT    = 0;
-    TIM3->INTFR  = (uint16_t)~TIM_FLAG_Update;
-    TIM3->DMAINTENR |= TIM_IT_Update;
-    NVIC_EnableIRQ(TIM3_IRQn);
-    TIM3->CTLR1 |= TIM_CEN;
+    BOARD_TICK_TIM->PSC    = (uint16_t)((FUNCONF_SYSTEM_CORE_CLOCK / 10000U) - 1U);
+    BOARD_TICK_TIM->ATRLR  = (uint16_t)((10000U * ms / 1000U) - 1U);
+    BOARD_TICK_TIM->CNT    = 0;
+    BOARD_TICK_TIM->INTFR  = (uint16_t)~TIM_FLAG_Update;
+    BOARD_TICK_TIM->DMAINTENR |= TIM_IT_Update;
+    NVIC_EnableIRQ(BOARD_TICK_TIM_IRQ);
+    BOARD_TICK_TIM->CTLR1 |= TIM_CEN;
 }
 
-void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
-void TIM3_IRQHandler(void)
+void BOARD_TICK_TIM_ISR(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+void BOARD_TICK_TIM_ISR(void)
 {
-    if ((TIM3->INTFR & TIM_FLAG_Update) == 0U) {
+    if ((BOARD_TICK_TIM->INTFR & TIM_FLAG_Update) == 0U) {
         return;
     }
-    TIM3->INTFR = (uint16_t)~TIM_FLAG_Update;
+    BOARD_TICK_TIM->INTFR = (uint16_t)~TIM_FLAG_Update;
 
     if (tick_cb) {
         tick_cb();

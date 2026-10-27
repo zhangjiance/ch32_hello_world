@@ -27,7 +27,8 @@ ch32_hello_world/
 │   └── ch32v30x_ob/            # 当前板 BSP（自包含，拷贝即复用）
 │       ├── board_config.h      # BOARD_* 宏：BOOT 按键 PA6 + LED PA5
 │       ├── board.h             # 板级原语接口
-│       └── board.c             # 板级原语 + 周期 tick 中断
+│       ├── board.c             # 板级原语 + 周期 tick 中断
+│       └── board.cmake         # 晶振 + 时钟树
 ├── port/
 │   ├── boot_trigger_port.h     # 跨复位握手接口
 │   ├── boot_usb_port.h
@@ -41,7 +42,7 @@ ch32_hello_world/
     ├── usb_desc.c              # DFU runtime + CDC ACM
     ├── usb_config.h
     ├── fault_handlers.c        # 硬件异常 -> 复位（ch32fun 默认是死循环）
-    ├── funconfig.h             # ch32fun 配置（时钟树、printf）
+    ├── funconfig.h             # ch32fun 配置（printf、体积开关）
     ├── boot_log.h
     └── Link.ld                 # 0x00008000 + 96K
 ```
