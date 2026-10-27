@@ -58,4 +58,15 @@
 #define BOARD_APP_UART_CLK_ENABLE()      RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE)
 #define BOARD_APP_UART_GPIO_CLK_ENABLE() RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE)
 
+/* ---- ch32fun backend ----
+ * board_ch32fun.c implements the very same primitives with ch32fun, which names
+ * a pin as port*16 + number (ch32v30xhw.h: PA5, PB10, ...) and enables a
+ * peripheral through RCC->APB2PCENR instead of the GPIO_Init()/RCC_xxxClockCmd()
+ * helpers.  Spelling the same wiring out in that form keeps this file free of
+ * any one SDK's headers, so both backends read the pinout from one place. */
+#define BOARD_FUN_BOOT_PIN      PA6
+#define BOARD_FUN_LED_PIN       PA5
+#define BOARD_FUN_UART_TX_PIN   PB10
+#define BOARD_FUN_UART_RX_PIN   PB11
+
 #endif /* BOARD_CONFIG_H */

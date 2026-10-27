@@ -41,6 +41,26 @@
                 "BOARD": "ch32v30x_ob"
             },
             "binaryDir": "${sourceDir}/build/ch32v30x_ob-debug"
+        },
+        {
+            "name": "ch32v30x_ob-release-ch32fun",
+            "displayName": "CH32V30x OB (Release, ch32fun)",
+            "inherits": "base",
+            "cacheVariables": {
+                "BOARD": "ch32v30x_ob",
+                "SDK_BACKEND": "ch32fun"
+            },
+            "binaryDir": "${sourceDir}/build/ch32v30x_ob-release-ch32fun"
+        },
+        {
+            "name": "ch32v30x_ob-debug-ch32fun",
+            "displayName": "CH32V30x OB (Debug, ch32fun)",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "BOARD": "ch32v30x_ob",
+                "SDK_BACKEND": "ch32fun"
+            },
+            "binaryDir": "${sourceDir}/build/ch32v30x_ob-debug-ch32fun"
         }
     ],
     "buildPresets": [
@@ -52,6 +72,16 @@
         {
             "name": "ch32v30x_ob-debug",
             "configurePreset": "ch32v30x_ob-debug",
+            "jobs": 8
+        },
+        {
+            "name": "ch32v30x_ob-release-ch32fun",
+            "configurePreset": "ch32v30x_ob-release-ch32fun",
+            "jobs": 8
+        },
+        {
+            "name": "ch32v30x_ob-debug-ch32fun",
+            "configurePreset": "ch32v30x_ob-debug-ch32fun",
             "jobs": 8
         }
     ]

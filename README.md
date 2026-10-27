@@ -70,15 +70,41 @@ cmake --build --preset ch32v30x_ob-debug      # build
 | --- | --- | --- |
 | `ch32v30x_ob-debug` | Debug (`BOOT_PRINTF` enabled) | `build/ch32v30x_ob-debug/` |
 | `ch32v30x_ob-release` | Release (logging off, smaller) | `build/ch32v30x_ob-release/` |
+| `ch32v30x_ob-debug-ch32fun` | same, ch32fun backend | `build/ch32v30x_ob-debug-ch32fun/` |
+| `ch32v30x_ob-release-ch32fun` | same, ch32fun backend | `build/ch32v30x_ob-release-ch32fun/` |
 
 Artifacts: `<output dir>/ch32_hello_world.elf | .hex | .bin`
-(Debug ≈ 17.4 KB, Release ≈ 10.8 KB, out of the 96 KB partition).
+
+| preset | Release | Debug |
+| --- | --- | --- |
+| `*` (WCH SDK) | 12152 B | 18700 B |
+| `*-ch32fun` | **8948 B** | 11240 B |
+
+out of the 96 KB partition.
+
+### Peripheral library backend
+
+`-DSDK_BACKEND=wch|ch32fun` picks what sits under the board and chip port
+layers.
+
+* `wch` (default) - the WCH ch32v30x peripheral library from `SDK/` plus its
+  startup file.
+* `ch32fun` - [ch32fun](https://github.com/cnlohr/ch32fun), register level:
+  `ch32fun.c` supplies the startup, the clock tree and the `printf` transport,
+  `board_ch32fun.c` and `port/ch32v30x/boot_*_ch32v30xfun.c` supply everything
+  else.  It is a git submodule pinned to a known-good commit, so
+  `git submodule update --init --recursive` fetches it; point
+  `-DCH32FUN_ROOT=<path>` at another checkout to override.
+
+The gap comes from the C library: the WCH build links newlib's `printf` and
+`__udivdi3` (the 64-bit divide in the time base), the ch32fun build brings its
+own small formatter and a 32-bit time base.
 
 For a new board, add a pair of presets (`<board>-debug` / `<board>-release`) the same
 way, or configure directly:
 
 ```bash
-cmake -S . -B build -DBOARD=<board_name>
+cmake -S . -B build -DBOARD=<board_name> [-DSDK_BACKEND=ch32fun]
 cmake --build build -j
 ```
 

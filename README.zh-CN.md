@@ -68,15 +68,37 @@ cmake --build --preset ch32v30x_ob-debug      # 编译
 | --- | --- | --- |
 | `ch32v30x_ob-debug` | Debug（`BOOT_PRINTF` 打开） | `build/ch32v30x_ob-debug/` |
 | `ch32v30x_ob-release` | Release（日志关闭，体积更小） | `build/ch32v30x_ob-release/` |
+| `ch32v30x_ob-debug-ch32fun` | 同上，改用 ch32fun 后端 | `build/ch32v30x_ob-debug-ch32fun/` |
+| `ch32v30x_ob-release-ch32fun` | 同上，改用 ch32fun 后端 | `build/ch32v30x_ob-release-ch32fun/` |
 
 产物：`<输出目录>/ch32_hello_world.elf | .hex | .bin`
-（Debug ≈ 17.4 KB，Release ≈ 10.8 KB，分区 96 KB）。
+
+| preset | Release | Debug |
+| --- | --- | --- |
+| `*`（WCH SDK） | 12152 B | 18700 B |
+| `*-ch32fun` | **8948 B** | 11240 B |
+
+分区 96 KB。
+
+### 外设库后端
+
+`-DSDK_BACKEND=wch|ch32fun` 决定 board 层和芯片 port 层下面用哪套库。
+
+* `wch`（默认）——`SDK/` 里的 WCH ch32v30x 外设库 + 官方启动文件。
+* `ch32fun`——[ch32fun](https://github.com/cnlohr/ch32fun)，寄存器级：
+  `ch32fun.c` 提供启动、时钟树和 `printf` 输出，其余由 `board_ch32fun.c` 与
+  `port/ch32v30x/boot_*_ch32v30xfun.c` 提供。它是 git 子仓，固定在验证过的提交，
+  `git submodule update --init --recursive` 会自动拉取；也可用
+  `-DCH32FUN_ROOT=<path>` 指定别的副本。
+
+差距来自 C 库：WCH 版链着 newlib 的 `printf` 和 `__udivdi3`（时基里的 64 位除法），
+ch32fun 版自带小格式化器且时基改成 32 位。
 
 新增 board 后照葫芦画瓢加一对 preset（`<board>-debug` / `<board>-release`），
 也可以不用 preset 直接：
 
 ```bash
-cmake -S . -B build -DBOARD=<board_name>
+cmake -S . -B build -DBOARD=<board_name> [-DSDK_BACKEND=ch32fun]
 cmake --build build -j
 ```
 

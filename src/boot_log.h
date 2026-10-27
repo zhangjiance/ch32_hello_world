@@ -15,9 +15,18 @@
 #ifndef BOOT_LOG_H
 #define BOOT_LOG_H
 
+#if defined(BOOT_USE_CH32FUN)
+/* ch32fun.c provides printf() itself - its own formatter, no newlib, no
+ * malloc - and SystemInit() has already brought USART1 up at
+ * FUNCONF_UART_PRINTF_BAUD.  Declaring it here keeps this header SDK free,
+ * which usb_config.h relies on. */
+int printf(const char *fmt, ...);
+#else
 #include <stdio.h>
+#endif
 
-/* UART used by the WCH Debug library printf() (USART1, PA9). */
+/* UART used by the WCH Debug library printf() (USART1, PA9).  ch32fun's printf
+ * transport is configured in src/funconfig.h instead. */
 #define BOOT_LOG_BAUDRATE 115200
 
 #if defined(BOOT_ENABLE_LOG) && !defined(NDEBUG)
