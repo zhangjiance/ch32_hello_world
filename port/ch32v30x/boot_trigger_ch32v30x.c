@@ -10,6 +10,7 @@
  */
 #include "boot_trigger_port.h"
 #include "boot_protocol.h"
+#include "boot_usb_port.h"
 
 #include "boot_log.h"
 #include "ch32fun.h"
@@ -55,5 +56,12 @@ void boot_trigger_reboot_to_boot(void)
 {
     boot_trigger_request();
     BOOT_PRINTF("[BOOT] DFU requested, rebooting into bootloader\r\n");
+
+    /* Release D+ before the reset: the bootloader only starts a few hundred
+     * microseconds later, and the host has to see this device go away before it
+     * can pick the bootloader up.  The teardown holds the line low for the
+     * disconnect window, so nothing more is needed here. */
+    boot_usb_port_deinit();
+
     boot_system_reset();
 }

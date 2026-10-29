@@ -4,15 +4,17 @@ cmake_minimum_required(VERSION 3.22)
 # ch32_hello_world - demo application for the DFU bootloader.
 #
 # Standalone project: LED blink + DFU runtime + CDC ACM, and a BOOT-button path
-# that resets into the bootloader.
-# It links at 0x00008000, the application partition of the bootloader.
+# that resets into the bootloader (on boards whose button is a GPIO).
+# It links at 0x00003000, the application partition of the bootloader.
+#
+# Same layering as the bootloader: boards/<board> owns the crystal and the pins,
+# port/<chip> owns the core ISA, the USB controller and the memory map, and
+# nothing in src/ names a chip.
 # ==============================================================================
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
-
-add_compile_definitions(-DCONFIG_USB_HS)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -84,13 +86,27 @@ if(NOT EXISTS ${CHERRYUSB_ROOT}/class/cdc/usbd_cdc_acm.c)
     message(FATAL_ERROR "CherryUSB submodule missing; run: git submodule update --init --recursive")
 endif()
 
-# Chip port: cross-reset hand-shake and USBHS clock, register level.
+# Chip port: cross-reset hand-shake and USB controller clock, register level.
 set(_port_srcs
     ${CHIP_PORT_DIR}/boot_trigger_${CHIP_PORT}.c
     ${CHIP_PORT_DIR}/boot_usb_${CHIP_PORT}.c)
 
-message(STATUS "Board: ${BOARD}   Chip port: ${CHIP_PORT}")
+# Per-chip build settings: core ISA string, chip name, USB device controller
+# source/include dir, linker script.  Hard-wiring the CH32V30x values here is
+# what would make the V30x assumptions leak into the shared application.
+set(CHIP_MARCH "rv32imacxw" CACHE STRING "RISC-V ISA string of the selected chip port")
+if(EXISTS "${CHIP_PORT_DIR}/port.cmake")
+    include("${CHIP_PORT_DIR}/port.cmake")
+endif()
+
+if(NOT CHIP_USB_SRCS)
+    message(FATAL_ERROR "Chip port '${CHIP_PORT}' has no CHIP_USB_SRCS (expected in port/${CHIP_PORT}/port.cmake)")
+endif()
+
+message(STATUS "Board: ${BOARD}   Chip port: ${CHIP_PORT} (${BOOT_CHIP_NAME}, -march=${CHIP_MARCH})")
 message(STATUS "  board src: ${BOARD_SRC}")
+message(STATUS "  usb ctrl:  ${CHIP_USB_SRCS}")
+message(STATUS "  linker:    ${LINKER_SCRIPT}")
 message(STATUS "  ch32fun:   ${CH32FUN_ROOT}")
 
 # Toolchain before project() (sets the riscv-wch-elf- compilers).
@@ -100,9 +116,11 @@ include("${CHERRYUSB_ROOT}/cherryusb.cmake")
 # CherryUSB master has no usable CH32V30x USBHS port: port/wch/usbhs targets a
 # different USBHS IP (CH32V205/V4x7/CH32X305/CH58x) with an incompatible
 # register map, and CH32V30x is only covered under USBFS.  The chip port
-# therefore ships the validated USBHS device driver itself
-# (port/ch32v30x/usb_dc_ch32v30x.c, from CherryUSB v1.6.0's port/ch32/ch32hs).
-# The core/classes still come from the submodule.
+# therefore uses the validated USBHS device driver from our fork
+# (third_party_components/CherryUSB/port/wch/ch32v30x/usb_dc_ch32v30x.c, from
+# CherryUSB v1.6.0's port/ch32/ch32hs).  The CH32L103 needs none of that: its
+# USBFS is covered by CherryUSB's own port/wch/usbfs.  The core/classes always
+# come from the submodule.
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 enable_language(C ASM)
@@ -110,7 +128,9 @@ enable_language(C ASM)
 project(${CMAKE_PROJECT_NAME})
 
 set(PROJECT_TARGET ${CMAKE_PROJECT_NAME}.elf)
-set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/src/Link.ld)
+if(NOT DEFINED LINKER_SCRIPT)
+    message(FATAL_ERROR "Chip port '${CHIP_PORT}' sets no LINKER_SCRIPT (expected in port/${CHIP_PORT}/port.cmake)")
+endif()
 
 add_link_options(
     -T ${LINKER_SCRIPT}
@@ -126,11 +146,10 @@ target_sources(${PROJECT_TARGET} PRIVATE
     ${cherryusb_srcs}
     # ch32fun: startup, clock tree, SysTick and printf
     ${CH32FUN_ROOT}/ch32fun/ch32fun.c
-    # chip port: hand-shake + USBHS clock
+    # chip port: hand-shake + USB clock + low-level init
     ${_port_srcs}
-    # CH32V30x USBHS device controller, from the CherryUSB fork
-    # (branch ch32v30x-usbhs, port/wch/ch32v30x)
-    ${CHERRYUSB_ROOT}/port/wch/ch32v30x/usb_dc_ch32v30x.c
+    # USB device controller of the selected chip port
+    ${CHIP_USB_SRCS}
     # board primitives
     ${BOARD_SRC}
     # application
@@ -141,7 +160,7 @@ target_sources(${PROJECT_TARGET} PRIVATE
 
 target_include_directories(${PROJECT_TARGET} PRIVATE
     ${cherryusb_incs}
-    ${CHERRYUSB_ROOT}/port/wch/ch32v30x
+    ${CHIP_USB_INCS}
     ${CH32FUN_ROOT}/ch32fun
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/shared
@@ -150,7 +169,11 @@ target_include_directories(${PROJECT_TARGET} PRIVATE
     ${CHIP_PORT_DIR}
 )
 
+# BOOT_PRINTF logging is Debug-only, and the chip name is a chip-port property
+# (BOOT_CHIP_NAME in port/<chip>/port.cmake) that reaches the banner and the USB
+# strings from the command line, so src/ never names a part.
 target_compile_definitions(${PROJECT_TARGET} PRIVATE
+    BOOT_CHIP_NAME="${BOOT_CHIP_NAME}"
     $<$<CONFIG:Debug>:BOOT_ENABLE_LOG=1>
 )
 

@@ -45,6 +45,11 @@ void usb_dc_low_level_deinit(uint8_t busid)
     NVIC_DisableIRQ(USBHS_IRQn);
 }
 
+uintptr_t boot_usb_reg_base(void)
+{
+    return (uintptr_t)USBHS_BASE;
+}
+
 void boot_usb_port_deinit(void)
 {
     NVIC_DisableIRQ(USBHS_IRQn);
@@ -56,7 +61,8 @@ void boot_usb_port_deinit(void)
     USBHSD->INT_EN = 0;
     RCC->AHBPCENR &= ~RCC_AHBPeriph_USBHS;
 
-    /* >10 ms so the host definitely samples the disconnect. */
-    for (volatile uint32_t settle = 0U; settle < 200000U; ++settle) {
+    /* >10 ms so the host definitely samples the disconnect: 500000 iterations
+     * of the empty loop below are about 10 ms at 144 MHz (3 cycles each). */
+    for (volatile uint32_t settle = 0U; settle < 500000U; ++settle) {
     }
 }

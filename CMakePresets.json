@@ -9,7 +9,7 @@
         {
             "name": "base",
             "hidden": true,
-            "description": "Base preset for the CH32V30x DFU application",
+            "description": "Base preset for the CH32 DFU demo application",
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
@@ -29,7 +29,8 @@
             "displayName": "CH32V30x OB (Release)",
             "inherits": "base",
             "cacheVariables": {
-                "BOARD": "ch32v30x_ob"
+                "BOARD": "ch32v30x_ob",
+                "CHIP_PORT": "ch32v30x"
             },
             "binaryDir": "${sourceDir}/build/ch32v30x_ob-release"
         },
@@ -38,9 +39,50 @@
             "displayName": "CH32V30x OB (Debug)",
             "inherits": "base-debug",
             "cacheVariables": {
-                "BOARD": "ch32v30x_ob"
+                "BOARD": "ch32v30x_ob",
+                "CHIP_PORT": "ch32v30x"
             },
             "binaryDir": "${sourceDir}/build/ch32v30x_ob-debug"
+        },
+        {
+            "name": "ch32l103_candle-release",
+            "displayName": "CH32L103 candle (Release)",
+            "inherits": "base",
+            "cacheVariables": {
+                "BOARD": "ch32l103_candle",
+                "CHIP_PORT": "ch32l103"
+            },
+            "binaryDir": "${sourceDir}/build/ch32l103_candle-release"
+        },
+        {
+            "name": "ch32l103_candle-debug",
+            "displayName": "CH32L103 candle (Debug)",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "BOARD": "ch32l103_candle",
+                "CHIP_PORT": "ch32l103"
+            },
+            "binaryDir": "${sourceDir}/build/ch32l103_candle-debug"
+        },
+        {
+            "name": "ch32l103_bulepill-release",
+            "displayName": "CH32L103 bluepill (Release)",
+            "inherits": "base",
+            "cacheVariables": {
+                "BOARD": "ch32l103_bulepill",
+                "CHIP_PORT": "ch32l103"
+            },
+            "binaryDir": "${sourceDir}/build/ch32l103_bulepill-release"
+        },
+        {
+            "name": "ch32l103_bulepill-debug",
+            "displayName": "CH32L103 bluepill (Debug)",
+            "inherits": "base-debug",
+            "cacheVariables": {
+                "BOARD": "ch32l103_bulepill",
+                "CHIP_PORT": "ch32l103"
+            },
+            "binaryDir": "${sourceDir}/build/ch32l103_bulepill-debug"
         }
     ],
     "buildPresets": [
@@ -52,6 +94,26 @@
         {
             "name": "ch32v30x_ob-debug",
             "configurePreset": "ch32v30x_ob-debug",
+            "jobs": 8
+        },
+        {
+            "name": "ch32l103_candle-release",
+            "configurePreset": "ch32l103_candle-release",
+            "jobs": 8
+        },
+        {
+            "name": "ch32l103_candle-debug",
+            "configurePreset": "ch32l103_candle-debug",
+            "jobs": 8
+        },
+        {
+            "name": "ch32l103_bulepill-release",
+            "configurePreset": "ch32l103_bulepill-release",
+            "jobs": 8
+        },
+        {
+            "name": "ch32l103_bulepill-debug",
+            "configurePreset": "ch32l103_bulepill-debug",
             "jobs": 8
         }
     ]

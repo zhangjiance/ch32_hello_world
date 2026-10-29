@@ -1,13 +1,17 @@
 /*
  * main.c - ch32_hello_world
  *
- * Demo application running from 0x00008000 behind the DFU bootloader:
+ * Demo application running from 0x00003000 behind the DFU bootloader:
  *
  *   - LED heartbeat
  *   - DFU runtime interface  -> `dfu-util -e` reboots into the bootloader
  *   - CDC ACM VCOM (loopback)
- *   - BOOT button held       -> reboot into the bootloader (boards that have
- *     one; on boards without a button only the detach path remains)
+ *   - BOOT button held       -> reboot into the bootloader (boards whose button
+ *     is a GPIO; on boards where it is wired to BOOT0, and on boards without a
+ *     button, only the detach path remains)
+ *
+ * Chip and board agnostic: the controller comes from the chip port
+ * (boot_usb_reg_base()) and every pin from boards/<board>/board_config.h.
  */
 #include "ch32fun.h"
 
@@ -16,8 +20,13 @@
 #include "boot_log.h"
 #include "boot_protocol.h"
 #include "boot_trigger_port.h"
+#include "boot_usb_port.h"
 
 extern void app_usb_init(uint8_t busid, uintptr_t reg_base);
+
+/* Set by the DFU runtime handler (src/usb_desc.c) on DFU_DETACH; acted on here
+ * so the request itself is answered before the USB comes down. */
+bool dfu_detach_pending_flag(void);
 
 /* Heartbeat + button sampling period. */
 #define APP_TICK_MS          (200U)
@@ -52,7 +61,7 @@ static void clock_fallback_to_hsi(void)
 int main(void)
 {
     /* ch32fun's handle_reset() jumps straight to main(); SystemInit() is what
-     * brings the clock tree (HSE x6 = 144 MHz) and the printf UART up. */
+     * brings the clock tree (board.cmake: HSE x PLL) and the printf UART up. */
     clock_fallback_to_hsi();
     SystemInit();
 
@@ -60,13 +69,31 @@ int main(void)
 
     BOOT_PRINTF("\r\n");
     BOOT_PRINTF("========================================\r\n");
-    BOOT_PRINTF("  CH32V30x Hello World (%s)\r\n", BOARD_NAME);
+    BOOT_PRINTF("  %s Hello World (%s)\r\n", BOOT_CHIP_NAME, BOARD_NAME);
     BOOT_PRINTF("  Build: %s %s\r\n", __DATE__, __TIME__);
     BOOT_PRINTF("  LED blink + DFU runtime + CDC ACM\r\n");
     BOOT_PRINTF("  dfu-util -e  -> reboot into bootloader\r\n");
     BOOT_PRINTF("========================================\r\n\r\n");
 
-    app_usb_init(0, USBHS_BASE);
+    /*
+     * USB hand-over from the bootloader.
+     *
+     * The CH32V30x bootloader/app pair solves this by powering the USBHS PHY
+     * down in boot_usb_port_deinit() (CONTROL = 0 drops the D+ pull-up,
+     * HOST_CTRL = USBHS_PHY_SUSPENDM suspends the PHY) and holding that state
+     * for >10 ms before the application attaches: the host has to *see* the
+     * disconnect, otherwise it keeps the bootloader's device instance and the
+     * application never enumerates.
+     *
+     * Do the same here, from the application side, so the hand-over does not
+     * depend on how long the bootloader waited: release D+ (boot_usb_port_deinit()
+     * does that for both chip ports, and on the USBFS parts it drives the line
+     * low), wait past the host's 10 ms disconnect window, then attach.
+     */
+    boot_usb_port_deinit();
+    board_delay_ms(20);
+
+    app_usb_init(0, boot_usb_reg_base());
 
     uint32_t tick = 0;
     uint32_t press = 0;
@@ -75,6 +102,12 @@ int main(void)
         /* LED heartbeat */
         board_led_toggle();
         ++tick;
+
+        /* DFU_DETACH (dfu-util -e) -> the request is already answered, hand
+         * over to the bootloader now. */
+        if (dfu_detach_pending_flag()) {
+            boot_trigger_reboot_to_boot();
+        }
 
         /* BOOT button held -> request DFU mode and reset into the bootloader.
          * (board_read_boot_pin() is always false on boards without a button.) */

@@ -16,6 +16,12 @@
 
 #include "usb_config.h"
 
+/* The strings name the chip through BOOT_CHIP_NAME, a chip-port property
+ * (port/<chip>/port.cmake), so nothing here has to change for a new part. */
+#ifndef BOOT_CHIP_NAME
+#define BOOT_CHIP_NAME "CH32"
+#endif
+
 /* Endpoints */
 #define CDC_IN_EP  0x81
 #define CDC_OUT_EP 0x02
@@ -75,8 +81,8 @@ static const uint8_t other_speed_config_descriptor_fs[] = {
 
 static const char *string_descriptors[] = {
     (const char[]){ 0x09, 0x04 }, /* Langid */
-    "CH32V30x",                   /* Manufacturer */
-    "CH32V30x Hello World",       /* Product */
+    BOOT_CHIP_NAME,               /* Manufacturer */
+    BOOT_CHIP_NAME " Hello World",/* Product */
     "CH32APP0001",                /* Serial Number */
     "DFU Runtime",                /* iInterface 4 */
     "CDC ACM",                    /* iInterface 5 */
@@ -273,6 +279,17 @@ const struct usb_descriptor composite_descriptor = {
 
 /* ---------- DFU runtime class handler ---------- */
 
+/* DFU_DETACH is only acknowledged here: the teardown + reset happen from the
+ * main loop (dfu_detach_pending_flag()), so the control transfer completes
+ * instead of being cut off mid-handshake - the host then sees a clean detach
+ * followed by the bootloader attaching. */
+static volatile bool dfu_detach_pending;
+
+bool dfu_detach_pending_flag(void)
+{
+    return dfu_detach_pending;
+}
+
 enum {
     DFU_DETACH    = 0,
     DFU_DNLOAD    = 1,
@@ -289,9 +306,9 @@ static int dfu_handler(uint8_t busid, struct usb_setup_packet *setup,
     (void)busid;
     switch (setup->bRequest) {
         case DFU_DETACH:
-            /* dfu-util -e: hand over to the bootloader.  Never returns. */
+            /* dfu-util -e: request the hand-over to the bootloader. */
             BOOT_PRINTF("[APP] DFU_DETACH -> reboot into bootloader\r\n");
-            boot_trigger_reboot_to_boot();
+            dfu_detach_pending = true;
             return 0;
         case DFU_GETSTATUS: {
             static uint8_t status[6] = { 0, 0, 0, 0, 0, 0 }; /* OK, appIDLE */
