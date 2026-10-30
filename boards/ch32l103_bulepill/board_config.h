@@ -61,6 +61,12 @@
 #define BOARD_HAS_LED3          1
 #define BOARD_LED3_PIN          PB2
 
+/* ---- CAN pins ----
+ * PB8/PB9 are the CAN pins of this board (the bluepill header routing); the
+ * bootloader never touches CAN, the application does. */
+#define BOARD_CAN_RX_PIN        PB8
+#define BOARD_CAN_TX_PIN        PB9
+
 /* ---- CAN transceiver termination: none on this board ----
  * (kept explicit so a copied board file cannot inherit another board's pin) */
 #define BOARD_HAS_TERMINATION   0

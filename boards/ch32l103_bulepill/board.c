@@ -73,6 +73,30 @@ static void board_init_led(void)
 
     funPinMode(BOARD_LED_PIN, GPIO_CFGLR_OUT_10Mhz_PP);
 }
+#if BOARD_HAS_LED2
+/* Second LED (LED2).  Same off-level convention as LED1; a board whose second
+ * LED has the opposite polarity overrides it with BOARD_LED2_ACTIVE_LOW. */
+#ifndef BOARD_LED2_ACTIVE_LOW
+#define BOARD_LED2_ACTIVE_LOW BOARD_LED_ACTIVE_LOW
+#endif
+
+static uint8_t led2_level(uint8_t on)
+{
+    return BOARD_LED2_ACTIVE_LOW ? (uint8_t)!on : on;
+}
+
+static void board_init_led2(void)
+{
+    RCC->APB2PCENR |= BOARD_GPIO_RCC;
+
+    /* Preload the off level before the pin becomes an output, so the LED does
+     * not flash on at boot.  Without this the second LED stays an input and the
+     * application's TX/RX indicators never light. */
+    funDigitalWrite(BOARD_LED2_PIN, led2_level(0U) ? FUN_HIGH : FUN_LOW);
+
+    funPinMode(BOARD_LED2_PIN, GPIO_CFGLR_OUT_10Mhz_PP);
+}
+#endif /* BOARD_HAS_LED2 */
 #endif /* BOARD_HAS_LED */
 
 void board_led_write(uint8_t state)
@@ -100,9 +124,22 @@ void board_led_toggle(void)
 /* CAN transceiver termination                                                */
 /* -------------------------------------------------------------------------- */
 #if BOARD_HAS_TERMINATION
+static bool termination_on;
+
 static uint8_t term_level(bool on)
 {
     return BOARD_TERM_ACTIVE_LOW ? (uint8_t)!on : (uint8_t)on;
+}
+
+void board_set_termination(bool on)
+{
+    termination_on = on;
+    funDigitalWrite(BOARD_TERM_PIN, term_level(on) ? FUN_HIGH : FUN_LOW);
+}
+
+bool board_get_termination(void)
+{
+    return termination_on;
 }
 
 static void board_init_termination(void)
@@ -113,10 +150,21 @@ static void board_init_termination(void)
      * an unpowered bus with 120 ohm across it is better than a second
      * terminator on a bus that already has one.  Preload the level before the
      * pin becomes an output. */
-    funDigitalWrite(BOARD_TERM_PIN, term_level(false) ? FUN_HIGH : FUN_LOW);
     funPinMode(BOARD_TERM_PIN, GPIO_CFGLR_OUT_10Mhz_PP);
+    board_set_termination(false);
+}
+#else /* !BOARD_HAS_TERMINATION */
+void board_set_termination(bool on)
+{
+    (void)on;
+}
+
+bool board_get_termination(void)
+{
+    return false;
 }
 #endif /* BOARD_HAS_TERMINATION */
+
 
 /* -------------------------------------------------------------------------- */
 /* BOOT button                                                                */
@@ -217,6 +265,9 @@ void board_init(void)
 
 #if BOARD_HAS_LED
     board_init_led();
+#endif
+#if BOARD_HAS_LED2
+    board_init_led2();
 #endif
 #if BOARD_HAS_TERMINATION
     board_init_termination();

@@ -100,7 +100,9 @@ uintptr_t boot_usb_reg_base(void)
     return (uintptr_t)USBFS_BASE;
 }
 
-/* ch32fun's vector table entry for the USBFS interrupt (weak by default). */
+/* ch32fun's vector table entry for the USBFS interrupt.  It belongs to the chip
+ * port, not to the controller driver: a driver that ships one of its own (the
+ * port/ch32/ch32fs copy candleLight uses) has to leave it out. */
 void USBFS_IRQHandler(void) INTERRUPT_DECORATOR;
 void USBFS_IRQHandler(void)
 {

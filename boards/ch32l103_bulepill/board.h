@@ -38,6 +38,11 @@ void board_delay_ms(uint32_t ms);
 void board_led_write(uint8_t state);
 void board_led_toggle(void);
 
+/* CAN transceiver termination (120 ohm switch): on = true engages it.  No-op
+ * on boards without one (BOARD_HAS_TERMINATION 0). */
+void board_set_termination(bool on);
+bool board_get_termination(void);
+
 /* BOOT button primitive: true while pressed.  Always false without a button. */
 bool board_read_boot_pin(void);
 
